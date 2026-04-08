@@ -2,6 +2,8 @@
 
 A tool for patch management and tweaking setings for Dishonored, with additional features for speedrunning.
 
+<img width="636" height="793" alt="image" src="https://github.com/user-attachments/assets/089ae20a-c17c-4989-8480-fc99cb8d9df7" />
+
 ## Features
 - Patch management for `1.2 - Base Game`, `1.3 - Knife of Dunwall`, `1.4 - Brigmore Witches`, `1.4 - DaudHonored`, and `1.5 - Latest`
 - Optional Boyle RNG and Timsh RNG fix installation
