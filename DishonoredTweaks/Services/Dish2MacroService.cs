@@ -1,0 +1,374 @@
+using System;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Net.Http;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+
+namespace DishonoredTweaks.Services
+{
+    public sealed class Dish2MacroConfiguration
+    {
+        public int? DownBindVirtualKey { get; set; } = 0x20; // Space
+        public int? UpBindVirtualKey { get; set; }
+        public int IntervalMilliseconds { get; set; } = 5;
+    }
+
+    public sealed class Dish2MacroService
+    {
+        public const string MacroDownloadUrl = "https://github.com/Som1Lse/Dish2Macro/releases/download/v2.1.0/Dish2Macro.zip";
+
+        private const string MacroExecutableFileName = "Dish2Macro.exe";
+        private const string MacroIniFileName = "Dish2Macro.ini";
+
+        private readonly HttpClient _httpClient = new()
+        {
+            Timeout = TimeSpan.FromMinutes(10)
+        };
+
+        public string GetDefaultInstallDirectory()
+        {
+            string appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+            return Path.Combine(appDataPath, "DishonoredTweaks", "Dish2Macro");
+        }
+
+        public string GetExecutablePath(string installDirectory)
+        {
+            return Path.Combine(installDirectory, MacroExecutableFileName);
+        }
+
+        public string GetIniPath(string installDirectory)
+        {
+            return Path.Combine(installDirectory, MacroIniFileName);
+        }
+
+        public bool IsInstalled(string installDirectory)
+        {
+            return File.Exists(GetExecutablePath(installDirectory));
+        }
+
+        public Dish2MacroConfiguration LoadConfiguration(string installDirectory)
+        {
+            Dish2MacroConfiguration configuration = new();
+            string iniPath = GetIniPath(installDirectory);
+            if (!File.Exists(iniPath))
+            {
+                return configuration;
+            }
+
+            bool inGeneralSection = false;
+            foreach (string rawLine in File.ReadAllLines(iniPath))
+            {
+                string line = rawLine.Trim();
+                if (string.IsNullOrWhiteSpace(line) || line.StartsWith(';'))
+                {
+                    continue;
+                }
+
+                if (line.StartsWith('[') && line.EndsWith(']'))
+                {
+                    string sectionName = line[1..^1].Trim();
+                    inGeneralSection = sectionName.Equals("general", StringComparison.OrdinalIgnoreCase);
+                    continue;
+                }
+
+                if (!inGeneralSection)
+                {
+                    continue;
+                }
+
+                int commentIndex = line.IndexOf(';');
+                if (commentIndex >= 0)
+                {
+                    line = line[..commentIndex].Trim();
+                }
+
+                if (string.IsNullOrWhiteSpace(line))
+                {
+                    continue;
+                }
+
+                int equalsIndex = line.IndexOf('=');
+                if (equalsIndex <= 0 || equalsIndex >= line.Length - 1)
+                {
+                    continue;
+                }
+
+                string key = line[..equalsIndex].Trim();
+                string value = line[(equalsIndex + 1)..].Trim();
+                if (string.IsNullOrWhiteSpace(key) || string.IsNullOrWhiteSpace(value))
+                {
+                    continue;
+                }
+
+                if (key.Equals("DownBind", StringComparison.OrdinalIgnoreCase))
+                {
+                    configuration.DownBindVirtualKey = ParseVirtualKeyValue(value, "DownBind");
+                }
+                else if (key.Equals("UpBind", StringComparison.OrdinalIgnoreCase))
+                {
+                    configuration.UpBindVirtualKey = ParseVirtualKeyValue(value, "UpBind");
+                }
+                else if (key.Equals("Interval", StringComparison.OrdinalIgnoreCase))
+                {
+                    int interval = ParseIntegerValue(value, "Interval");
+                    if (interval <= 0)
+                    {
+                        throw new InvalidOperationException("Dish2Macro interval must be greater than zero.");
+                    }
+
+                    configuration.IntervalMilliseconds = interval;
+                }
+            }
+
+            ValidateConfiguration(configuration);
+            return configuration;
+        }
+
+        public void SaveConfiguration(string installDirectory, Dish2MacroConfiguration configuration)
+        {
+            if (string.IsNullOrWhiteSpace(installDirectory))
+            {
+                throw new InvalidOperationException("Macro install directory is not set.");
+            }
+
+            ValidateConfiguration(configuration);
+            Directory.CreateDirectory(installDirectory);
+            string iniPath = GetIniPath(installDirectory);
+
+            StringBuilder builder = new();
+            builder.AppendLine("; Generated by Dishonored Tweaks");
+            builder.AppendLine("[general]");
+            if (configuration.DownBindVirtualKey.HasValue)
+            {
+                builder.AppendLine($"DownBind=0x{configuration.DownBindVirtualKey.Value:X}");
+            }
+
+            if (configuration.UpBindVirtualKey.HasValue)
+            {
+                builder.AppendLine($"UpBind=0x{configuration.UpBindVirtualKey.Value:X}");
+            }
+
+            builder.AppendLine($"Interval={configuration.IntervalMilliseconds.ToString(CultureInfo.InvariantCulture)}");
+            File.WriteAllText(iniPath, builder.ToString());
+        }
+
+        public async Task InstallAsync(
+            string installDirectory,
+            IProgress<string>? statusProgress = null,
+            IProgress<double?>? downloadProgress = null,
+            CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrWhiteSpace(installDirectory))
+            {
+                throw new InvalidOperationException("Macro install directory is not set.");
+            }
+
+            string tempRoot = Path.Combine(Path.GetTempPath(), "DishonoredTweaks", "Dish2Macro", Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(tempRoot);
+
+            try
+            {
+                statusProgress?.Report("Downloading Dish2Macro...");
+                string zipPath = Path.Combine(tempRoot, "Dish2Macro.zip");
+                await DownloadZipAsync(MacroDownloadUrl, zipPath, downloadProgress, cancellationToken);
+
+                string extractPath = Path.Combine(tempRoot, "extract");
+                Directory.CreateDirectory(extractPath);
+
+                statusProgress?.Report("Extracting Dish2Macro...");
+                ExtractZipSafely(zipPath, extractPath);
+
+                string? macroExePath = Directory
+                    .GetFiles(extractPath, MacroExecutableFileName, SearchOption.AllDirectories)
+                    .FirstOrDefault();
+                if (macroExePath == null)
+                {
+                    throw new FileNotFoundException("Dish2Macro.exe was not found in the downloaded release.");
+                }
+
+                string? macroIniPath = Directory
+                    .GetFiles(extractPath, MacroIniFileName, SearchOption.AllDirectories)
+                    .FirstOrDefault();
+
+                Directory.CreateDirectory(installDirectory);
+
+                statusProgress?.Report("Installing Dish2Macro...");
+                File.Copy(macroExePath, Path.Combine(installDirectory, MacroExecutableFileName), true);
+
+                if (macroIniPath != null)
+                {
+                    File.Copy(macroIniPath, Path.Combine(installDirectory, MacroIniFileName), true);
+                }
+
+                downloadProgress?.Report(100);
+                statusProgress?.Report("Dish2Macro installed.");
+            }
+            finally
+            {
+                TryDeleteDirectory(tempRoot);
+            }
+        }
+
+        private async Task DownloadZipAsync(
+            string url,
+            string destinationPath,
+            IProgress<double?>? downloadProgress,
+            CancellationToken cancellationToken)
+        {
+            using HttpResponseMessage response = await _httpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+            response.EnsureSuccessStatusCode();
+
+            long? totalBytes = response.Content.Headers.ContentLength;
+            await using Stream sourceStream = await response.Content.ReadAsStreamAsync(cancellationToken);
+            await using FileStream destinationStream = new(destinationPath, FileMode.Create, FileAccess.Write, FileShare.None, 81920, true);
+
+            byte[] buffer = new byte[81920];
+            long totalRead = 0;
+            int bytesRead;
+            while ((bytesRead = await sourceStream.ReadAsync(buffer.AsMemory(0, buffer.Length), cancellationToken)) > 0)
+            {
+                await destinationStream.WriteAsync(buffer.AsMemory(0, bytesRead), cancellationToken);
+                totalRead += bytesRead;
+
+                if (totalBytes.HasValue && totalBytes.Value > 0)
+                {
+                    downloadProgress?.Report((double)totalRead / totalBytes.Value * 100d);
+                }
+                else
+                {
+                    downloadProgress?.Report(null);
+                }
+            }
+        }
+
+        private static void ExtractZipSafely(string zipPath, string destinationDirectory)
+        {
+            using System.IO.Compression.ZipArchive archive = System.IO.Compression.ZipFile.OpenRead(zipPath);
+            foreach (System.IO.Compression.ZipArchiveEntry entry in archive.Entries)
+            {
+                string normalisedEntryPath = entry.FullName.Replace('\\', '/');
+                if (string.IsNullOrWhiteSpace(normalisedEntryPath))
+                {
+                    continue;
+                }
+
+                string targetPath = Path.GetFullPath(Path.Combine(destinationDirectory, normalisedEntryPath));
+                string fullDestinationPath = Path.GetFullPath(destinationDirectory + Path.DirectorySeparatorChar);
+
+                if (!targetPath.StartsWith(fullDestinationPath, StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new InvalidOperationException("Zip contains an invalid path entry.");
+                }
+
+                if (normalisedEntryPath.EndsWith("/", StringComparison.Ordinal))
+                {
+                    Directory.CreateDirectory(targetPath);
+                    continue;
+                }
+
+                string? targetDir = Path.GetDirectoryName(targetPath);
+                if (!string.IsNullOrEmpty(targetDir))
+                {
+                    Directory.CreateDirectory(targetDir);
+                }
+
+                using Stream source = entry.Open();
+                using FileStream destination = new(targetPath, FileMode.Create, FileAccess.Write, FileShare.None);
+                source.CopyTo(destination);
+            }
+        }
+
+        private static void TryDeleteDirectory(string path)
+        {
+            try
+            {
+                if (!Directory.Exists(path))
+                {
+                    return;
+                }
+
+                foreach (string file in Directory.GetFiles(path, "*", SearchOption.AllDirectories))
+                {
+                    try
+                    {
+                        File.SetAttributes(file, FileAttributes.Normal);
+                    }
+                    catch
+                    {
+                    }
+                }
+
+                Directory.Delete(path, true);
+            }
+            catch
+            {
+            }
+        }
+
+        private static int ParseVirtualKeyValue(string value, string fieldName)
+        {
+            int parsed = ParseIntegerValue(value, fieldName);
+            if (parsed <= 0 || parsed > 0xFE)
+            {
+                throw new InvalidOperationException($"Dish2Macro {fieldName} must be between 1 and 0xFE.");
+            }
+
+            return parsed;
+        }
+
+        private static int ParseIntegerValue(string value, string fieldName)
+        {
+            string normalised = value.Trim();
+            if (normalised.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
+            {
+                if (int.TryParse(normalised[2..], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out int hexValue))
+                {
+                    return hexValue;
+                }
+
+                throw new InvalidOperationException($"Dish2Macro {fieldName} value is not valid hexadecimal.");
+            }
+
+            if (int.TryParse(normalised, NumberStyles.Integer, CultureInfo.InvariantCulture, out int decimalValue))
+            {
+                return decimalValue;
+            }
+
+            throw new InvalidOperationException($"Dish2Macro {fieldName} value is not a valid integer.");
+        }
+
+        private static void ValidateConfiguration(Dish2MacroConfiguration configuration)
+        {
+            if (configuration.IntervalMilliseconds <= 0)
+            {
+                throw new InvalidOperationException("Dish2Macro interval must be greater than zero.");
+            }
+
+            int? down = configuration.DownBindVirtualKey;
+            int? up = configuration.UpBindVirtualKey;
+
+            if (!down.HasValue && !up.HasValue)
+            {
+                throw new InvalidOperationException("Dish2Macro requires at least one bind (DownBind or UpBind).");
+            }
+
+            if (down.HasValue && (down.Value <= 0 || down.Value > 0xFE))
+            {
+                throw new InvalidOperationException("Dish2Macro DownBind must be between 1 and 0xFE.");
+            }
+
+            if (up.HasValue && (up.Value <= 0 || up.Value > 0xFE))
+            {
+                throw new InvalidOperationException("Dish2Macro UpBind must be between 1 and 0xFE.");
+            }
+
+            if (down.HasValue && up.HasValue && down.Value == up.Value)
+            {
+                throw new InvalidOperationException("Dish2Macro DownBind and UpBind cannot use the same key.");
+            }
+        }
+    }
+}

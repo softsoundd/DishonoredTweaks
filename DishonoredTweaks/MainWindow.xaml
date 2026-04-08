@@ -1,0 +1,1044 @@
+<Window x:Class="DishonoredTweaks.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+        xmlns:behaviors="clr-namespace:DishonoredTweaks.Behaviors"
+        mc:Ignorable="d"
+        Style="{StaticResource MaterialDesignWindow}"
+        Background="{DynamicResource MaterialDesignPaper}"
+        TextElement.Foreground="{DynamicResource MaterialDesignBody}"
+        Title="Dishonored Tweaks"
+        Icon="/icon.ico"
+        Height="800"
+        Width="650"
+        ResizeMode="CanMinimize"
+        WindowStartupLocation="CenterScreen"
+        Loaded="Window_Loaded"
+        Closing="Window_Closing">
+
+    <Window.Resources>
+        <Style x:Key="FormLabelTextStyle" TargetType="TextBlock">
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Margin" Value="0,0,12,0"/>
+            <Setter Property="Opacity" Value="0.95"/>
+        </Style>
+
+        <Style x:Key="StatusChipBorderStyle" TargetType="Border">
+            <Setter Property="Background" Value="{DynamicResource MaterialDesignCardBackground}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource MaterialDesignDivider}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="5"/>
+            <Setter Property="Padding" Value="8,4"/>
+            <Setter Property="Margin" Value="0,0,10,8"/>
+        </Style>
+
+        <Style x:Key="SectionCardStyle" TargetType="Border">
+            <Setter Property="Background" Value="{DynamicResource MaterialDesignCardBackground}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource MaterialDesignDivider}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="Padding" Value="12"/>
+            <Setter Property="Margin" Value="0,0,0,12"/>
+        </Style>
+
+        <Style x:Key="CompactInfoButtonStyle" TargetType="Button" BasedOn="{StaticResource MaterialDesignIconButton}">
+            <Setter Property="Width" Value="24"/>
+            <Setter Property="Height" Value="24"/>
+            <Setter Property="MinWidth" Value="24"/>
+            <Setter Property="MinHeight" Value="24"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+
+        <Style x:Key="CompactEntryTextBoxStyle" TargetType="TextBox" BasedOn="{StaticResource MaterialDesignOutlinedTextBox}">
+            <Setter Property="Height" Value="38"/>
+            <Setter Property="MinHeight" Value="38"/>
+            <Setter Property="Padding" Value="10,2,10,2"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+
+        <Style x:Key="CompactEntryComboBoxStyle" TargetType="ComboBox" BasedOn="{StaticResource MaterialDesignComboBox}">
+            <Setter Property="Height" Value="38"/>
+            <Setter Property="MinHeight" Value="38"/>
+            <Setter Property="Padding" Value="10,2,10,2"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+    </Window.Resources>
+
+    <materialDesign:DialogHost Identifier="RootDialog">
+        <Grid Margin="10">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <DockPanel Grid.Row="0" Margin="0,0,0,10">
+                <StackPanel DockPanel.Dock="Right"
+                            Orientation="Horizontal"
+                            VerticalAlignment="Center"
+                            Margin="0,0,0,0">
+                    <Button x:Name="LanguageButton"
+                            Click="LanguageButton_Click"
+                            Style="{StaticResource MaterialDesignIconButton}"
+                            Width="26"
+                            Height="26"
+                            Padding="0"
+                            Margin="0,0,6,0"
+                            Opacity="0.72"
+                            ToolTip="Language">
+                        <materialDesign:PackIcon x:Name="LanguageIcon"
+                                                 Kind="Translate"
+                                                 Width="18"
+                                                 Height="18"
+                                                 VerticalAlignment="Center"/>
+                    </Button>
+                    <ComboBox x:Name="LanguageComboBox"
+                              Width="98"
+                              Margin="0,0,0,0"
+                              SelectionChanged="LanguageComboBox_SelectionChanged"
+                              DropDownClosed="LanguageComboBox_DropDownClosed"
+                              Visibility="Collapsed"
+                              Style="{StaticResource CompactEntryComboBoxStyle}">
+                        <ComboBoxItem x:Name="LanguageEnglishComboBoxItem" Tag="en" Content="English"/>
+                        <ComboBoxItem x:Name="LanguageRussianComboBoxItem" Tag="ru" Content="Russian"/>
+                    </ComboBox>
+                </StackPanel>
+                <Button Click="SelectGameDirectory_Click"
+                        Padding="10,5"
+                        Margin="0,0,8,0"
+                        DockPanel.Dock="Right"
+                        Style="{StaticResource MaterialDesignOutlinedButton}">
+                    <StackPanel Orientation="Horizontal">
+                        <materialDesign:PackIcon Kind="FolderSearchOutline"
+                                                 Margin="0,0,8,0"
+                                                 VerticalAlignment="Center"/>
+                        <TextBlock x:Name="SelectGameDirectoryButtonTextBlock" Text="Select Game Directory"/>
+                    </StackPanel>
+                </Button>
+                <Border BorderBrush="{DynamicResource MaterialDesignDivider}"
+                        BorderThickness="1"
+                        Margin="0,0,10,0"
+                        CornerRadius="4">
+                    <TextBlock x:Name="GameDirectoryPathTextBlock"
+                               Text="No directory selected."
+                               VerticalAlignment="Center"
+                               Padding="8,5"
+                               TextTrimming="CharacterEllipsis"/>
+                </Border>
+            </DockPanel>
+
+            <WrapPanel Grid.Row="1" Margin="0,0,0,8">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,16,8">
+                    <materialDesign:PackIcon Kind="FileDocumentOutline"
+                                             VerticalAlignment="Center"
+                                             Margin="0,0,6,0"
+                                             Opacity="0.7"/>
+                    <TextBlock x:Name="ConfigStatusTextBlock"
+                               Text="Documents Configs: N/A"
+                               Foreground="{DynamicResource MaterialDesignBody}"
+                               Opacity="0.95"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,8">
+                    <materialDesign:PackIcon Kind="DatabaseOutline"
+                                             VerticalAlignment="Center"
+                                             Margin="0,0,6,0"
+                                             Opacity="0.7"/>
+                    <TextBlock x:Name="BaselineStatusTextBlock"
+                               Text="Baseline Backup: Unknown"
+                               Foreground="{DynamicResource MaterialDesignBody}"
+                               Opacity="0.95"/>
+                </StackPanel>
+            </WrapPanel>
+
+            <WrapPanel Grid.Row="2" Margin="0,4,0,15">
+                <Button Click="OpenConfigFolder_Click"
+                        Style="{StaticResource MaterialDesignOutlinedButton}"
+                        Margin="0,0,0,8"
+                        Height="30"
+                        Padding="10,4">
+                    <StackPanel Orientation="Horizontal">
+                        <materialDesign:PackIcon Kind="FolderOpenOutline" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                        <TextBlock x:Name="OpenConfigFolderButtonTextBlock" Text="Open Config Folder" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+            </WrapPanel>
+
+            <Border Grid.Row="3"
+                    BorderBrush="{DynamicResource MaterialDesignDivider}"
+                    BorderThickness="0,2,0,0"
+                    Margin="0,0,0,10">
+                <TabControl x:Name="MainTabControl"
+                            Margin="0,0,0,10"
+                            BorderThickness="0"
+                            Padding="0"
+                            KeyboardNavigation.TabNavigation="None">
+                    <TabControl.Resources>
+                        <Style TargetType="TabItem" BasedOn="{StaticResource MaterialDesignTabItem}">
+                            <Setter Property="Foreground" Value="{DynamicResource MaterialDesignBody}"/>
+                            <Setter Property="materialDesign:ColorZoneAssist.Mode" Value="Custom"/>
+                            <Setter Property="materialDesign:ColorZoneAssist.Foreground" Value="{DynamicResource MaterialDesignBody}"/>
+                            <Setter Property="materialDesign:ColorZoneAssist.Background" Value="#C3CBD2"/>
+                            <Style.Triggers>
+                                <Trigger Property="IsSelected" Value="True">
+                                    <Setter Property="materialDesign:ColorZoneAssist.Background" Value="#FFFFFF"/>
+                                    <Setter Property="Foreground" Value="{DynamicResource MaterialDesignBody}"/>
+                                </Trigger>
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="IsSelected" Value="False"/>
+                                        <Condition Property="IsMouseOver" Value="True"/>
+                                    </MultiTrigger.Conditions>
+                                    <Setter Property="materialDesign:ColorZoneAssist.Background" Value="#D4DAE0"/>
+                                </MultiTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TabControl.Resources>
+
+                    <TabItem>
+                        <TabItem.Header>
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon Kind="DownloadOutline" Margin="0,0,6,0"/>
+                                <TextBlock x:Name="PatchTweaksTabHeaderTextBlock" Text="Patch Tweaks" FontWeight="Bold"/>
+                            </StackPanel>
+                        </TabItem.Header>
+
+                        <Border Background="{DynamicResource MaterialDesignPaper}" Padding="20">
+                            <ScrollViewer VerticalScrollBarVisibility="Auto"
+                                          HorizontalScrollBarVisibility="Disabled"
+                                          behaviors:SmoothScrollBehavior.SmoothScroll="True"
+                                          behaviors:SmoothScrollBehavior.FadeEdges="True">
+                                <ScrollViewer.Style>
+                                    <Style TargetType="ScrollViewer" BasedOn="{StaticResource MaterialDesignScrollViewer}">
+                                        <Style.Resources>
+                                            <Style TargetType="ScrollBar" BasedOn="{StaticResource ModernScrollBar}" />
+                                        </Style.Resources>
+                                    </Style>
+                                </ScrollViewer.Style>
+
+                                <StackPanel Margin="0,0,15,0" TextElement.Foreground="{DynamicResource MaterialDesignBody}">
+                                    <Border Background="{DynamicResource PrimaryHueLightBrush}"
+                                            CornerRadius="4"
+                                            Padding="10,5"
+                                            Margin="0,0,0,12">
+                                        <TextBlock x:Name="PatchSelectionHeaderTextBlock" Text="Patch Selection"
+                                                   FontWeight="Bold"
+                                                   FontSize="16"
+                                                   Foreground="White"/>
+                                    </Border>
+
+                                    <Border Style="{StaticResource SectionCardStyle}">
+                                        <StackPanel>
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="200"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock x:Name="PatchVersionLabelTextBlock" Grid.Column="0" Style="{StaticResource FormLabelTextStyle}" Text="Patch Version:"/>
+                                                <ComboBox x:Name="PatchVersionComboBox"
+                                                          Grid.Column="1"
+                                                          MinWidth="260"
+                                                          Style="{StaticResource CompactEntryComboBoxStyle}"
+                                                          SelectionChanged="PatchVersionComboBox_SelectionChanged">
+                                                    <ComboBoxItem x:Name="PatchVersion12ComboBoxItem" Tag="1.2-base" Content="1.2 - Base Game"/>
+                                                    <ComboBoxItem x:Name="PatchVersion13ComboBoxItem" Tag="1.3-kod" Content="1.3 - Knife of Dunwall"/>
+                                                    <ComboBoxItem x:Name="PatchVersion14BrigmoreComboBoxItem" Tag="1.4-bw" Content="1.4 - Brigmore Witches"/>
+                                                    <ComboBoxItem x:Name="PatchVersion14DaudComboBoxItem" Tag="1.4-daud" Content="1.4 - DaudHonored"/>
+                                                    <ComboBoxItem x:Name="PatchVersion15ComboBoxItem" Tag="1.5-latest" Content="1.5 - Latest"/>
+                                                </ComboBox>
+                                                <Button Grid.Column="2"
+                                                        Style="{StaticResource CompactInfoButtonStyle}"
+                                                        ToolTip="Information"
+                                                        Margin="6,0,0,0"
+                                                        Click="ShowSettingInfo_Click"
+                                                        Tag="patch-version">
+                                                    <materialDesign:PackIcon Kind="Information"/>
+                                                </Button>
+                                            </Grid>
+
+                                            <TextBlock x:Name="ExecutableDetectionTextBlock"
+                                                       Margin="0,12,0,0"
+                                                       VerticalAlignment="Center"
+                                                       TextWrapping="Wrap"
+                                                       Opacity="0.85"
+                                                       Text="Detecting..."/>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <Border Background="{DynamicResource PrimaryHueLightBrush}"
+                                            CornerRadius="4"
+                                            Padding="10,5"
+                                            Margin="0,0,0,12">
+                                        <TextBlock x:Name="ExtraPatchesHeaderTextBlock" Text="Extra Patches"
+                                                   FontWeight="Bold"
+                                                   FontSize="16"
+                                                   Foreground="White"/>
+                                    </Border>
+
+                                    <Border Style="{StaticResource SectionCardStyle}">
+                                        <StackPanel>
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <CheckBox x:Name="BoyleFixCheckBox"
+                                                          Content="Boyle RNG fix"/>
+                                                <Button Grid.Column="1"
+                                                        Style="{StaticResource CompactInfoButtonStyle}"
+                                                        ToolTip="Information"
+                                                        Margin="6,0,0,0"
+                                                        Click="ShowSettingInfo_Click"
+                                                        Tag="boyle-rng-fix">
+                                                    <materialDesign:PackIcon Kind="Information"/>
+                                                </Button>
+                                            </Grid>
+                                            <Grid Margin="0,12,0,0">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <CheckBox x:Name="TimshFixCheckBox"
+                                                          Content="Timsh RNG fix"/>
+                                                <Button Grid.Column="1"
+                                                        Style="{StaticResource CompactInfoButtonStyle}"
+                                                        ToolTip="Information"
+                                                        Margin="6,0,0,0"
+                                                        Click="ShowSettingInfo_Click"
+                                                        Tag="timsh-rng-fix">
+                                                    <materialDesign:PackIcon Kind="Information"/>
+                                                </Button>
+                                            </Grid>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <WrapPanel Margin="0,12,0,0" HorizontalAlignment="Left">
+                                        <Button x:Name="ApplyPatchButton"
+                                                Click="ApplyPatchButton_Click"
+                                                Style="{StaticResource MaterialDesignRaisedButton}"
+                                                HorizontalAlignment="Left"
+                                                Margin="0,0,10,0">
+                                            <StackPanel Orientation="Horizontal">
+                                                <materialDesign:PackIcon Kind="Download" Margin="0,0,6,0"/>
+                                                <TextBlock x:Name="ApplySelectedPatchesButtonTextBlock" Text="Apply Selected Patches"/>
+                                            </StackPanel>
+                                        </Button>
+                                        <Button x:Name="RestoreBaselineButton"
+                                                Click="RestoreBaselineButton_Click"
+                                                Style="{StaticResource MaterialDesignOutlinedButton}"
+                                                HorizontalAlignment="Left">
+                                            <StackPanel Orientation="Horizontal">
+                                                <materialDesign:PackIcon Kind="BackupRestore" Margin="0,0,6,0"/>
+                                                <TextBlock x:Name="RestoreBackupButtonTextBlock" Text="Restore Backup"/>
+                                            </StackPanel>
+                                        </Button>
+                                    </WrapPanel>
+                                </StackPanel>
+                            </ScrollViewer>
+                        </Border>
+                    </TabItem>
+
+                    <TabItem>
+                        <TabItem.Header>
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon Kind="GamepadVariant" Margin="0,0,6,0"/>
+                                <TextBlock x:Name="GameTweaksTabHeaderTextBlock" Text="Game Tweaks" FontWeight="Bold"/>
+                            </StackPanel>
+                        </TabItem.Header>
+
+                        <Border Background="{DynamicResource MaterialDesignPaper}" Padding="20">
+                            <ScrollViewer VerticalScrollBarVisibility="Auto"
+                                          HorizontalScrollBarVisibility="Disabled"
+                                          behaviors:SmoothScrollBehavior.SmoothScroll="True"
+                                          behaviors:SmoothScrollBehavior.FadeEdges="True">
+                                <ScrollViewer.Style>
+                                    <Style TargetType="ScrollViewer" BasedOn="{StaticResource MaterialDesignScrollViewer}">
+                                        <Style.Resources>
+                                            <Style TargetType="ScrollBar" BasedOn="{StaticResource ModernScrollBar}" />
+                                        </Style.Resources>
+                                    </Style>
+                                </ScrollViewer.Style>
+
+                                <StackPanel Margin="0,0,15,0" TextElement.Foreground="{DynamicResource MaterialDesignBody}">
+                                    <Border Background="{DynamicResource PrimaryHueLightBrush}"
+                                            CornerRadius="4"
+                                            Padding="10,5"
+                                            Margin="0,0,0,12">
+                                        <TextBlock x:Name="EngineTweaksHeaderTextBlock" Text="Engine Tweaks"
+                                                   FontWeight="Bold"
+                                                   FontSize="16"
+                                                   Foreground="White"/>
+                                    </Border>
+
+                                    <Border Style="{StaticResource SectionCardStyle}">
+                                        <StackPanel>
+                                            <Border Padding="10"
+                                                    CornerRadius="4"
+                                                    BorderBrush="{DynamicResource MaterialDesignDivider}"
+                                                    BorderThickness="1"
+                                                    Background="{DynamicResource MaterialDesignCardBackground}">
+                                                <StackPanel>
+                                                    <TextBlock x:Name="FramerateControlHeaderTextBlock" Text="Framerate Control"
+                                                               FontWeight="SemiBold"
+                                                               Opacity="0.75"
+                                                               Margin="0,0,0,8"/>
+
+                                                    <Grid>
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <CheckBox x:Name="SmoothFrameRateCheckBox"
+                                                                  Content="Framerate limiter"
+                                                                  IsChecked="True"
+                                                                  Checked="EngineToggleSetting_Changed"
+                                                                  Unchecked="EngineToggleSetting_Changed"/>
+                                                        <Button Grid.Column="1"
+                                                                Style="{StaticResource CompactInfoButtonStyle}"
+                                                                ToolTip="Information"
+                                                                Margin="6,0,0,0"
+                                                                Click="ShowSettingInfo_Click"
+                                                                Tag="framerate-limiter">
+                                                            <materialDesign:PackIcon Kind="Information"/>
+                                                        </Button>
+                                                    </Grid>
+
+                                                    <Grid Margin="0,12,0,0">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="200"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <TextBlock x:Name="FramerateLabelTextBlock" Grid.Column="0"
+                                                                   Style="{StaticResource FormLabelTextStyle}"
+                                                                   Text="Framerate (FPS):"/>
+                                                        <TextBox x:Name="MaxSmoothedFrameRateTextBox"
+                                                                 Grid.Column="1"
+                                                                 MinWidth="170"
+                                                                 VerticalAlignment="Center"
+                                                                 Text="250"
+                                                                 Style="{StaticResource CompactEntryTextBoxStyle}"
+                                                                 materialDesign:HintAssist.Hint="FPS value > 1"/>
+                                                        <Button x:Name="ApplyFpsButton" Grid.Column="2"
+                                                                Style="{StaticResource MaterialDesignOutlinedButton}"
+                                                                Margin="8,0,0,0"
+                                                                Padding="10,4"
+                                                                Click="ApplyEngineTweaksButton_Click"
+                                                                Content="Apply"/>
+                                                        <Button Grid.Column="3"
+                                                                Style="{StaticResource CompactInfoButtonStyle}"
+                                                                ToolTip="Information"
+                                                                Margin="6,0,0,0"
+                                                                Click="ShowSettingInfo_Click"
+                                                                Tag="framerate-fps">
+                                                            <materialDesign:PackIcon Kind="Information"/>
+                                                        </Button>
+                                                    </Grid>
+                                                </StackPanel>
+                                            </Border>
+
+                                            <Grid Margin="0,12,0,0">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <CheckBox x:Name="DynamicLightsCheckBox"
+                                                          Content="Dynamic lights"
+                                                          IsChecked="False"
+                                                          Checked="EngineToggleSetting_Changed"
+                                                          Unchecked="EngineToggleSetting_Changed"/>
+                                                <Button Grid.Column="1"
+                                                        Style="{StaticResource CompactInfoButtonStyle}"
+                                                        ToolTip="Information"
+                                                        Margin="6,0,0,0"
+                                                        Click="ShowSettingInfo_Click"
+                                                        Tag="dynamic-lights">
+                                                    <materialDesign:PackIcon Kind="Information"/>
+                                                </Button>
+                                            </Grid>
+                                            <Grid Margin="0,12,0,0">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <CheckBox x:Name="DynamicShadowsCheckBox"
+                                                          Content="Dynamic shadows"
+                                                          IsChecked="False"
+                                                          Checked="EngineToggleSetting_Changed"
+                                                          Unchecked="EngineToggleSetting_Changed"/>
+                                                <Button Grid.Column="1"
+                                                        Style="{StaticResource CompactInfoButtonStyle}"
+                                                        ToolTip="Information"
+                                                        Margin="6,0,0,0"
+                                                        Click="ShowSettingInfo_Click"
+                                                        Tag="dynamic-shadows">
+                                                    <materialDesign:PackIcon Kind="Information"/>
+                                                </Button>
+                                            </Grid>
+                                            <Grid Margin="0,12,0,0">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <CheckBox x:Name="LightShaftsCheckBox"
+                                                          Content="Light shafts"
+                                                          IsChecked="False"
+                                                          Checked="EngineToggleSetting_Changed"
+                                                          Unchecked="EngineToggleSetting_Changed"/>
+                                                <Button Grid.Column="1"
+                                                        Style="{StaticResource CompactInfoButtonStyle}"
+                                                        ToolTip="Information"
+                                                        Margin="6,0,0,0"
+                                                        Click="ShowSettingInfo_Click"
+                                                        Tag="light-shafts">
+                                                    <materialDesign:PackIcon Kind="Information"/>
+                                                </Button>
+                                            </Grid>
+                                            <Grid Margin="0,12,0,0">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <CheckBox x:Name="SkipStartupMoviesCheckBox"
+                                                          Content="Skip startup movies"
+                                                          IsChecked="True"
+                                                          Checked="EngineToggleSetting_Changed"
+                                                          Unchecked="EngineToggleSetting_Changed"/>
+                                                <Button Grid.Column="1"
+                                                        Style="{StaticResource CompactInfoButtonStyle}"
+                                                        ToolTip="Information"
+                                                        Margin="6,0,0,0"
+                                                        Click="ShowSettingInfo_Click"
+                                                        Tag="skip-startup-movies">
+                                                    <materialDesign:PackIcon Kind="Information"/>
+                                                </Button>
+                                            </Grid>
+
+                                            <Grid Margin="0,12,0,0">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <CheckBox x:Name="PauseOnLossFocusCheckBox"
+                                                          Grid.Column="0"
+                                                          Content="Pause when unfocused"
+                                                          Checked="EngineToggleSetting_Changed"
+                                                          Unchecked="EngineToggleSetting_Changed"/>
+                                                <Button Grid.Column="1"
+                                                        Style="{StaticResource CompactInfoButtonStyle}"
+                                                        ToolTip="Information"
+                                                        Margin="6,0,0,0"
+                                                        Click="ShowSettingInfo_Click"
+                                                        Tag="pause-unfocused">
+                                                    <materialDesign:PackIcon Kind="Information"/>
+                                                </Button>
+                                            </Grid>
+                                        </StackPanel>
+                                    </Border>
+
+                                </StackPanel>
+                            </ScrollViewer>
+                        </Border>
+                    </TabItem>
+
+                    <TabItem>
+                        <TabItem.Header>
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon Kind="KeyboardOutline" Margin="0,0,6,0"/>
+                                <TextBlock x:Name="InputTweaksTabHeaderTextBlock" Text="Input Tweaks" FontWeight="Bold"/>
+                            </StackPanel>
+                        </TabItem.Header>
+
+                        <Border Background="{DynamicResource MaterialDesignPaper}" Padding="20">
+                            <ScrollViewer VerticalScrollBarVisibility="Auto"
+                                          HorizontalScrollBarVisibility="Disabled"
+                                          behaviors:SmoothScrollBehavior.SmoothScroll="True"
+                                          behaviors:SmoothScrollBehavior.FadeEdges="True">
+                                <ScrollViewer.Style>
+                                    <Style TargetType="ScrollViewer" BasedOn="{StaticResource MaterialDesignScrollViewer}">
+                                        <Style.Resources>
+                                            <Style TargetType="ScrollBar" BasedOn="{StaticResource ModernScrollBar}" />
+                                        </Style.Resources>
+                                    </Style>
+                                </ScrollViewer.Style>
+
+                                <StackPanel Margin="0,0,15,0" TextElement.Foreground="{DynamicResource MaterialDesignBody}">
+                                    <Border Background="{DynamicResource PrimaryHueLightBrush}"
+                                            CornerRadius="4"
+                                            Padding="10,5"
+                                            Margin="0,0,0,12">
+                                        <TextBlock x:Name="ScrollWheelHeaderTextBlock" Text="Scroll Wheel"
+                                                   FontWeight="Bold"
+                                                   FontSize="16"
+                                                   Foreground="White"/>
+                                    </Border>
+
+                                    <Border Style="{StaticResource SectionCardStyle}">
+                                        <StackPanel>
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="200"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock x:Name="JumpLabelTextBlock" Grid.Column="0" Style="{StaticResource FormLabelTextStyle}" Text="Jump:"/>
+                                                <ComboBox x:Name="JumpScrollComboBox"
+                                                          Grid.Column="1"
+                                                          MinWidth="220"
+                                                          SelectionChanged="ScrollDirectionComboBox_SelectionChanged"
+                                                          Style="{StaticResource CompactEntryComboBoxStyle}">
+                                                    <ComboBoxItem x:Name="JumpNoneComboBoxItem" Tag="None" Content="None"/>
+                                                    <ComboBoxItem x:Name="JumpScrollUpComboBoxItem" Tag="ScrollUp" Content="ScrollUp"/>
+                                                    <ComboBoxItem x:Name="JumpScrollDownComboBoxItem" Tag="ScrollDown" Content="ScrollDown"/>
+                                                </ComboBox>
+                                                <Button Grid.Column="2"
+                                                        Style="{StaticResource CompactInfoButtonStyle}"
+                                                        ToolTip="Information"
+                                                        Margin="6,0,0,0"
+                                                        Click="ShowSettingInfo_Click"
+                                                        Tag="jump-scroll">
+                                                    <materialDesign:PackIcon Kind="Information"/>
+                                                </Button>
+                                            </Grid>
+
+                                            <Grid Margin="0,12,0,0">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="200"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock x:Name="InteractLabelTextBlock" Grid.Column="0" Style="{StaticResource FormLabelTextStyle}" Text="Interact:"/>
+                                                <ComboBox x:Name="InteractScrollComboBox"
+                                                          Grid.Column="1"
+                                                          MinWidth="220"
+                                                          SelectionChanged="ScrollDirectionComboBox_SelectionChanged"
+                                                          Style="{StaticResource CompactEntryComboBoxStyle}">
+                                                    <ComboBoxItem x:Name="InteractNoneComboBoxItem" Tag="None" Content="None"/>
+                                                    <ComboBoxItem x:Name="InteractScrollUpComboBoxItem" Tag="ScrollUp" Content="ScrollUp"/>
+                                                    <ComboBoxItem x:Name="InteractScrollDownComboBoxItem" Tag="ScrollDown" Content="ScrollDown"/>
+                                                </ComboBox>
+                                                <Button Grid.Column="2"
+                                                        Style="{StaticResource CompactInfoButtonStyle}"
+                                                        ToolTip="Information"
+                                                        Margin="6,0,0,0"
+                                                        Click="ShowSettingInfo_Click"
+                                                        Tag="interact-scroll">
+                                                    <materialDesign:PackIcon Kind="Information"/>
+                                                </Button>
+                                            </Grid>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <Border Background="{DynamicResource PrimaryHueLightBrush}"
+                                            CornerRadius="4"
+                                            Padding="10,5"
+                                            Margin="0,0,0,12">
+                                        <TextBlock x:Name="FpsKeysHeaderTextBlock" Text="FPS Keys"
+                                                   FontWeight="Bold"
+                                                   FontSize="16"
+                                                   Foreground="White"/>
+                                    </Border>
+
+                                    <Border Style="{StaticResource SectionCardStyle}">
+                                        <StackPanel>
+                                            <Grid Margin="0,0,0,12">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock x:Name="FpsKeysDescriptionTextBlock" Text="Each row sets your FPS to the entered value."
+                                                           Opacity="0.7"/>
+                                                <Button Grid.Column="1"
+                                                        Style="{StaticResource CompactInfoButtonStyle}"
+                                                        ToolTip="Information"
+                                                        Margin="6,0,0,0"
+                                                        Click="ShowSettingInfo_Click"
+                                                        Tag="fps-keys">
+                                                    <materialDesign:PackIcon Kind="Information"/>
+                                                </Button>
+                                            </Grid>
+
+                                            <Grid Margin="0,0,0,4">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="200"/>
+                                                    <ColumnDefinition Width="160"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock x:Name="FpsKeysKeyHeaderTextBlock" Grid.Column="1"
+                                                           Text="Key"
+                                                           FontWeight="SemiBold"
+                                                           Opacity="0.8"
+                                                           VerticalAlignment="Center"/>
+                                                <TextBlock x:Name="FpsKeysValueHeaderTextBlock" Grid.Column="2"
+                                                           Text="FPS"
+                                                           FontWeight="SemiBold"
+                                                           Opacity="0.8"
+                                                           VerticalAlignment="Center"
+                                                           Margin="10,0,0,0"/>
+                                            </Grid>
+
+                                            <Grid Margin="0,12,0,0">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="200"/>
+                                                    <ColumnDefinition Width="160"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock x:Name="Bind1LabelTextBlock" Grid.Column="0" Style="{StaticResource FormLabelTextStyle}" Text="Bind 1:"/>
+                                                <TextBox x:Name="FpsKey1TextBox"
+                                                         Grid.Column="1"
+                                                         Style="{StaticResource CompactEntryTextBoxStyle}"
+                                                         PreviewKeyDown="KeyPickerTextBox_PreviewKeyDown"
+                                                         PreviewTextInput="KeyPickerTextBox_PreviewTextInput"
+                                                         PreviewMouseDown="KeyPickerTextBox_PreviewMouseDown"
+                                                         PreviewMouseWheel="KeyPickerTextBox_PreviewMouseWheel"
+                                                         LostFocus="InputSetting_LostFocus"/>
+                                                <TextBox x:Name="FpsValue1TextBox"
+                                                         Grid.Column="2"
+                                                         Margin="10,0,0,0"
+                                                         MinWidth="120"
+                                                         Style="{StaticResource CompactEntryTextBoxStyle}"
+                                                         LostFocus="InputSetting_LostFocus"/>
+                                            </Grid>
+
+                                            <Grid Margin="0,12,0,0">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="200"/>
+                                                    <ColumnDefinition Width="160"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock x:Name="Bind2LabelTextBlock" Grid.Column="0" Style="{StaticResource FormLabelTextStyle}" Text="Bind 2:"/>
+                                                <TextBox x:Name="FpsKey2TextBox"
+                                                         Grid.Column="1"
+                                                         Style="{StaticResource CompactEntryTextBoxStyle}"
+                                                         PreviewKeyDown="KeyPickerTextBox_PreviewKeyDown"
+                                                         PreviewTextInput="KeyPickerTextBox_PreviewTextInput"
+                                                         PreviewMouseDown="KeyPickerTextBox_PreviewMouseDown"
+                                                         PreviewMouseWheel="KeyPickerTextBox_PreviewMouseWheel"
+                                                         LostFocus="InputSetting_LostFocus"/>
+                                                <TextBox x:Name="FpsValue2TextBox"
+                                                         Grid.Column="2"
+                                                         Margin="10,0,0,0"
+                                                         MinWidth="120"
+                                                         Style="{StaticResource CompactEntryTextBoxStyle}"
+                                                         LostFocus="InputSetting_LostFocus"/>
+                                            </Grid>
+
+                                            <Grid Margin="0,12,0,0">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="200"/>
+                                                    <ColumnDefinition Width="160"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock x:Name="Bind3LabelTextBlock" Grid.Column="0" Style="{StaticResource FormLabelTextStyle}" Text="Bind 3:"/>
+                                                <TextBox x:Name="FpsKey3TextBox"
+                                                         Grid.Column="1"
+                                                         Style="{StaticResource CompactEntryTextBoxStyle}"
+                                                         PreviewKeyDown="KeyPickerTextBox_PreviewKeyDown"
+                                                         PreviewTextInput="KeyPickerTextBox_PreviewTextInput"
+                                                         PreviewMouseDown="KeyPickerTextBox_PreviewMouseDown"
+                                                         PreviewMouseWheel="KeyPickerTextBox_PreviewMouseWheel"
+                                                         LostFocus="InputSetting_LostFocus"/>
+                                                <TextBox x:Name="FpsValue3TextBox"
+                                                         Grid.Column="2"
+                                                         Margin="10,0,0,0"
+                                                         MinWidth="120"
+                                                         Style="{StaticResource CompactEntryTextBoxStyle}"
+                                                         LostFocus="InputSetting_LostFocus"/>
+                                            </Grid>
+
+                                            <Grid Margin="0,12,0,0">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="200"/>
+                                                    <ColumnDefinition Width="160"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock x:Name="Bind4LabelTextBlock" Grid.Column="0" Style="{StaticResource FormLabelTextStyle}" Text="Bind 4:"/>
+                                                <TextBox x:Name="FpsKey4TextBox"
+                                                         Grid.Column="1"
+                                                         Style="{StaticResource CompactEntryTextBoxStyle}"
+                                                         PreviewKeyDown="KeyPickerTextBox_PreviewKeyDown"
+                                                         PreviewTextInput="KeyPickerTextBox_PreviewTextInput"
+                                                         PreviewMouseDown="KeyPickerTextBox_PreviewMouseDown"
+                                                         PreviewMouseWheel="KeyPickerTextBox_PreviewMouseWheel"
+                                                         LostFocus="InputSetting_LostFocus"/>
+                                                <TextBox x:Name="FpsValue4TextBox"
+                                                         Grid.Column="2"
+                                                         Margin="10,0,0,0"
+                                                         MinWidth="120"
+                                                         Style="{StaticResource CompactEntryTextBoxStyle}"
+                                                         LostFocus="InputSetting_LostFocus"/>
+                                            </Grid>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <Border Background="{DynamicResource PrimaryHueLightBrush}"
+                                            CornerRadius="4"
+                                            Padding="10,5"
+                                            Margin="0,0,0,12">
+                                        <TextBlock x:Name="ConsoleCheatsHeaderTextBlock" Text="Console &amp; Cheats"
+                                                   FontWeight="Bold"
+                                                   FontSize="16"
+                                                   Foreground="White"/>
+                                    </Border>
+
+                                    <Border Style="{StaticResource SectionCardStyle}">
+                                        <StackPanel>
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="200"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock x:Name="ConsoleBindKeyLabelTextBlock" Grid.Column="0" Style="{StaticResource FormLabelTextStyle}" Text="Console Bind Key:"/>
+                                                <TextBox x:Name="ConsoleKeyTextBox"
+                                                         Grid.Column="1"
+                                                         MinWidth="220"
+                                                         Style="{StaticResource CompactEntryTextBoxStyle}"
+                                                         PreviewKeyDown="KeyPickerTextBox_PreviewKeyDown"
+                                                         PreviewTextInput="KeyPickerTextBox_PreviewTextInput"
+                                                         PreviewMouseDown="KeyPickerTextBox_PreviewMouseDown"
+                                                         PreviewMouseWheel="KeyPickerTextBox_PreviewMouseWheel"
+                                                         LostFocus="InputSetting_LostFocus"/>
+                                                <Button Grid.Column="2"
+                                                        Style="{StaticResource CompactInfoButtonStyle}"
+                                                        ToolTip="Information"
+                                                        Margin="6,0,0,0"
+                                                        Click="ShowSettingInfo_Click"
+                                                        Tag="console-bind">
+                                                    <materialDesign:PackIcon Kind="Information"/>
+                                                </Button>
+                                            </Grid>
+
+                                            <Grid Margin="0,12,0,0">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="200"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock x:Name="EnableCheatsKeyLabelTextBlock" Grid.Column="0" Style="{StaticResource FormLabelTextStyle}" Text="Enable cheats key:"/>
+                                                <TextBox x:Name="CheatKeyTextBox"
+                                                         Grid.Column="1"
+                                                         MinWidth="220"
+                                                         Style="{StaticResource CompactEntryTextBoxStyle}"
+                                                         PreviewKeyDown="KeyPickerTextBox_PreviewKeyDown"
+                                                         PreviewTextInput="KeyPickerTextBox_PreviewTextInput"
+                                                         PreviewMouseDown="KeyPickerTextBox_PreviewMouseDown"
+                                                         PreviewMouseWheel="KeyPickerTextBox_PreviewMouseWheel"
+                                                         LostFocus="InputSetting_LostFocus"/>
+                                                <Button Grid.Column="2"
+                                                        Style="{StaticResource CompactInfoButtonStyle}"
+                                                        ToolTip="Information"
+                                                        Margin="6,0,0,0"
+                                                        Click="ShowSettingInfo_Click"
+                                                        Tag="enable-cheats">
+                                                    <materialDesign:PackIcon Kind="Information"/>
+                                                </Button>
+                                            </Grid>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <Border Background="{DynamicResource PrimaryHueLightBrush}"
+                                            CornerRadius="4"
+                                            Padding="10,5"
+                                            Margin="0,0,0,12">
+                                        <TextBlock x:Name="Dish2MacroHeaderTextBlock" Text="Dish2Macro"
+                                                   FontWeight="Bold"
+                                                   FontSize="16"
+                                                   Foreground="White"/>
+                                    </Border>
+
+                                    <Border Style="{StaticResource SectionCardStyle}">
+                                        <StackPanel>
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock x:Name="MacroDirectoryLabelTextBlock" Grid.Column="0" Style="{StaticResource FormLabelTextStyle}" Text="Macro directory:"/>
+                                                <TextBox x:Name="MacroDirectoryTextBox"
+                                                         Grid.Column="1"
+                                                         Margin="0,0,8,0"
+                                                         Style="{StaticResource CompactEntryTextBoxStyle}"
+                                                         LostFocus="MacroDirectoryTextBox_LostFocus"/>
+                                                <Button x:Name="BrowseMacroButton" Grid.Column="2"
+                                                        Style="{StaticResource MaterialDesignOutlinedButton}"
+                                                        Margin="0,0,0,0"
+                                                        Padding="10,4"
+                                                        Click="BrowseMacroDirectoryButton_Click"
+                                                        Content="Browse"/>
+                                                <Button Grid.Column="3"
+                                                        Style="{StaticResource CompactInfoButtonStyle}"
+                                                        ToolTip="Information"
+                                                        Margin="6,0,0,0"
+                                                        Click="ShowSettingInfo_Click"
+                                                        Tag="macro-directory">
+                                                    <materialDesign:PackIcon Kind="Information"/>
+                                                </Button>
+                                            </Grid>
+
+                                            <TextBlock x:Name="MacroStatusTextBlock"
+                                                       Margin="0,12,0,0"
+                                                       Text="Dish2Macro: Not installed"
+                                                       Opacity="0.85"
+                                                       TextWrapping="Wrap"/>
+
+                                            <Border Margin="0,12,0,0"
+                                                    Padding="10"
+                                                    CornerRadius="4"
+                                                    BorderBrush="{DynamicResource MaterialDesignDivider}"
+                                                    BorderThickness="1"
+                                                    Background="{DynamicResource MaterialDesignCardBackground}">
+                                                <StackPanel>
+                                                    <TextBlock x:Name="MacroSettingsHeaderTextBlock" Text="Macro Settings"
+                                                               FontWeight="SemiBold"
+                                                               Opacity="0.75"
+                                                               Margin="0,0,0,8"/>
+
+                                                    <Grid>
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="200"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <TextBlock x:Name="MacroDownBindLabelTextBlock" Grid.Column="0" Style="{StaticResource FormLabelTextStyle}" Text="Scroll down bind:"/>
+                                                        <TextBox x:Name="MacroDownBindTextBox"
+                                                                 Grid.Column="1"
+                                                                 MinWidth="220"
+                                                                 Style="{StaticResource CompactEntryTextBoxStyle}"
+                                                                 PreviewKeyDown="MacroBindTextBox_PreviewKeyDown"
+                                                                 PreviewTextInput="KeyPickerTextBox_PreviewTextInput"
+                                                                 PreviewMouseDown="MacroBindTextBox_PreviewMouseDown"
+                                                                 PreviewMouseWheel="MacroBindTextBox_PreviewMouseWheel"
+                                                                 LostFocus="MacroSetting_LostFocus"/>
+                                                        <Button Grid.Column="2"
+                                                                Style="{StaticResource CompactInfoButtonStyle}"
+                                                                ToolTip="Information"
+                                                                Margin="6,0,0,0"
+                                                                Click="ShowSettingInfo_Click"
+                                                                Tag="macro-down-bind">
+                                                            <materialDesign:PackIcon Kind="Information"/>
+                                                        </Button>
+                                                    </Grid>
+
+                                                    <Grid Margin="0,12,0,0">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="200"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <TextBlock x:Name="MacroUpBindLabelTextBlock" Grid.Column="0" Style="{StaticResource FormLabelTextStyle}" Text="Scroll up bind:"/>
+                                                        <TextBox x:Name="MacroUpBindTextBox"
+                                                                 Grid.Column="1"
+                                                                 MinWidth="220"
+                                                                 Style="{StaticResource CompactEntryTextBoxStyle}"
+                                                                 PreviewKeyDown="MacroBindTextBox_PreviewKeyDown"
+                                                                 PreviewTextInput="KeyPickerTextBox_PreviewTextInput"
+                                                                 PreviewMouseDown="MacroBindTextBox_PreviewMouseDown"
+                                                                 PreviewMouseWheel="MacroBindTextBox_PreviewMouseWheel"
+                                                                 LostFocus="MacroSetting_LostFocus"/>
+                                                        <Button Grid.Column="2"
+                                                                Style="{StaticResource CompactInfoButtonStyle}"
+                                                                ToolTip="Information"
+                                                                Margin="6,0,0,0"
+                                                                Click="ShowSettingInfo_Click"
+                                                                Tag="macro-up-bind">
+                                                            <materialDesign:PackIcon Kind="Information"/>
+                                                        </Button>
+                                                    </Grid>
+
+                                                    <Grid Margin="0,12,0,0">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="200"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <TextBlock x:Name="MacroIntervalLabelTextBlock" Grid.Column="0" Style="{StaticResource FormLabelTextStyle}" Text="Interval (ms):"/>
+                                                        <TextBox x:Name="MacroIntervalTextBox"
+                                                                 Grid.Column="1"
+                                                                 MinWidth="220"
+                                                                 Style="{StaticResource CompactEntryTextBoxStyle}"
+                                                                 LostFocus="MacroSetting_LostFocus"/>
+                                                        <Button Grid.Column="2"
+                                                                Style="{StaticResource CompactInfoButtonStyle}"
+                                                                ToolTip="Information"
+                                                                Margin="6,0,0,0"
+                                                                Click="ShowSettingInfo_Click"
+                                                                Tag="macro-interval">
+                                                            <materialDesign:PackIcon Kind="Information"/>
+                                                        </Button>
+                                                    </Grid>
+                                                </StackPanel>
+                                            </Border>
+
+                                            <WrapPanel Margin="0,12,0,0" HorizontalAlignment="Left">
+                                                <Button x:Name="DownloadMacroButton"
+                                                        Click="DownloadMacroButton_Click"
+                                                        Style="{StaticResource MaterialDesignOutlinedButton}"
+                                                        Margin="0,0,10,8">
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <materialDesign:PackIcon Kind="Download" Margin="0,0,6,0"/>
+                                                        <TextBlock x:Name="DownloadMacroButtonTextBlock" Text="Download / Update Macro"/>
+                                                    </StackPanel>
+                                                </Button>
+                                                <Button x:Name="LaunchMacroButton"
+                                                        Click="LaunchMacroButton_Click"
+                                                        Style="{StaticResource MaterialDesignRaisedButton}"
+                                                        Margin="0,0,10,8">
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <materialDesign:PackIcon Kind="Play" Margin="0,0,6,0"/>
+                                                        <TextBlock x:Name="LaunchMacroButtonTextBlock" Text="Launch Macro"/>
+                                                    </StackPanel>
+                                                </Button>
+                                                <Button x:Name="OpenMacroFolderButton"
+                                                        Click="OpenMacroFolderButton_Click"
+                                                        Style="{StaticResource MaterialDesignOutlinedButton}"
+                                                        Margin="0,0,0,8">
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <materialDesign:PackIcon Kind="FolderOpenOutline" Margin="0,0,6,0"/>
+                                                        <TextBlock x:Name="OpenMacroFolderButtonTextBlock" Text="Open Macro Folder"/>
+                                                    </StackPanel>
+                                                </Button>
+                                            </WrapPanel>
+                                        </StackPanel>
+                                    </Border>
+
+                                </StackPanel>
+                            </ScrollViewer>
+                        </Border>
+                    </TabItem>
+                </TabControl>
+            </Border>
+
+            <Grid Grid.Row="4" Margin="0,5,0,0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <TextBlock x:Name="StatusTextBlock"
+                           Grid.Row="0"
+                           Text="Ready."
+                           VerticalAlignment="Center"
+                           Margin="5,0,5,4"
+                           Opacity="0.8"/>
+                <ProgressBar x:Name="DownloadProgressBar"
+                             Grid.Row="1"
+                             Height="20"
+                             Minimum="0"
+                             Maximum="100"
+                             Value="0"
+                             HorizontalAlignment="Stretch"
+                             VerticalAlignment="Center"
+                             Visibility="Collapsed"/>
+            </Grid>
+    </Grid>
+    </materialDesign:DialogHost>
+</Window>
